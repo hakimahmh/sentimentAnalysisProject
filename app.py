@@ -7,6 +7,9 @@ from transformers import pipeline
 # ✅ Load sentiment & emotion models
 sentiment_pipeline = pipeline("text-classification", model="cardiffnlp/twitter-roberta-base-sentiment")
 
+# Define the emotion pipeline (correcting the missing pipeline)
+emotion_pipeline = pipeline("text-classification", model="bhadresh-savani/distilbert-base-uncased-emotion")
+
 # ✅ Sentiment Mapping (0=Negative, 1=Neutral, 2=Positive)
 sentiment_labels = {0: "Negative", 1: "Neutral", 2: "Positive"}
 
@@ -78,11 +81,15 @@ with tab2:
                 result = sentiment_pipeline(text)[0]
                 return sentiment_labels[int(result["label"].split("_")[-1])], round(result["score"], 2)
 
+            # ✅ Updated Emotion Analysis with Empty Text Check
             def analyze_emotion(text):
-                result = emotion_pipeline(text)[0]
-                return result["label"], round(result["score"], 2)
+                if text:  # Check if text is not empty
+                    result = emotion_pipeline(text)[0]
+                    return result["label"], round(result["score"], 2)
+                else:
+                    return "No Emotion", 0.0
 
-            # ✅ Apply analysis
+            # ✅ Apply sentiment and emotion analysis
             df[["Predicted Sentiment", "Sentiment Confidence"]] = df["text"].apply(lambda x: pd.Series(analyze_sentiment(x)))
             df[["Predicted Emotion", "Emotion Confidence"]] = df["text"].apply(lambda x: pd.Series(analyze_emotion(x)))
 
