@@ -17,7 +17,7 @@ sentiment_labels = {0: "Negative", 1: "Neutral", 2: "Positive"}
 st.title("Sentiment & Emotion Analysis Dashboard")
 
 # ✅ Tabs for different features
-tab1, tab2 = st.tabs(["Single Text Analysis", "Twitter Feed Analysis"])
+tab1, tab2 = st.tabs(["Single Text Analysis", "Social Media Feed Analysis"])
 
 # 🔹 Tab 1: Single Text Analysis
 with tab1:
