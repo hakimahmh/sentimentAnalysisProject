@@ -3,25 +3,24 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from transformers import pipeline
+from sklearn.metrics import accuracy_score, f1_score
 
 # ✅ Load sentiment & emotion models
 sentiment_pipeline = pipeline("text-classification", model="cardiffnlp/twitter-roberta-base-sentiment")
-
-# Define the emotion pipeline (correcting the missing pipeline)
 emotion_pipeline = pipeline("text-classification", model="bhadresh-savani/distilbert-base-uncased-emotion")
 
 # ✅ Sentiment Mapping (0=Negative, 1=Neutral, 2=Positive)
 sentiment_labels = {0: "Negative", 1: "Neutral", 2: "Positive"}
 
 # ✅ Streamlit UI
-st.title("Sentiment & Emotion Analysis Dashboard")
+st.title("📊 Sentiment & Emotion Analysis Dashboard")
 
 # ✅ Tabs for different features
 tab1, tab2 = st.tabs(["Single Text Analysis", "Social Media Feed Analysis"])
 
 # 🔹 Tab 1: Single Text Analysis
 with tab1:
-    st.subheader("Analyze a Single Text with Word-Level Sentiment")
+    st.subheader("Analyze a Single Text for Sentiment & Emotion")
     user_input = st.text_area("Enter text for analysis", "I love this product, but the service was terrible!")
 
     if st.button("Analyze"):
@@ -31,17 +30,23 @@ with tab1:
             sentiment_label = sentiment_labels[int(sentiment_result["label"].split("_")[-1])]
             sentiment_score = round(sentiment_result["score"], 2)
 
-            # ✅ Display full text sentiment
-            st.subheader("Overall Sentiment Analysis")
+            # ✅ Emotion Analysis
+            emotion_result = emotion_pipeline(user_input)[0]
+            emotion_label = emotion_result["label"]
+            emotion_score = round(emotion_result["score"], 2)
+
+            # ✅ Display results
+            st.subheader("Overall Sentiment & Emotion Analysis")
             st.write(f"**Sentiment:** {sentiment_label} (Confidence: {sentiment_score})")
+            st.write(f"**Emotion:** {emotion_label} (Confidence: {emotion_score})")
 
             # ✅ Word-Level Sentiment Analysis
-            words = user_input.split()  # Tokenize text
-            word_sentiments = [sentiment_pipeline(word)[0] for word in words]  # Get sentiment per word
+            words = user_input.split()
+            word_sentiments = [sentiment_pipeline(word)[0] for word in words]
             word_labels = [sentiment_labels[int(ws["label"].split("_")[-1])] for ws in word_sentiments]
             word_scores = [round(ws["score"], 2) for ws in word_sentiments]
 
-            # ✅ Create DataFrame for visualization
+            # ✅ DataFrame for visualization
             word_df = pd.DataFrame({"Word": words, "Sentiment": word_labels, "Score": word_scores})
 
             # ✅ Display table
@@ -59,11 +64,10 @@ with tab1:
         else:
             st.warning("⚠️ Please enter some text to analyze!")
 
-
 # 🔹 Tab 2: Twitter Feed Analysis
 with tab2:
-    st.subheader("Analyze Sentiment of Twitter Feed")
-    
+    st.subheader("Analyze Sentiment & Emotion in Twitter Feed")
+
     uploaded_file = st.file_uploader("Upload a CSV file with a column named 'text'", type=["csv"])
 
     if uploaded_file:
@@ -76,12 +80,12 @@ with tab2:
             # ✅ Show sample data
             st.write("📌 Sample Data:", df.head())
 
-            # ✅ Process Sentiment & Emotion Analysis (Avoid Redundant Calls)
+            # ✅ Define sentiment analysis function
             def analyze_sentiment(text):
                 result = sentiment_pipeline(text)[0]
                 return sentiment_labels[int(result["label"].split("_")[-1])], round(result["score"], 2)
 
-            # ✅ Updated Emotion Analysis with Empty Text Check
+            # ✅ Define emotion analysis function
             def analyze_emotion(text):
                 if text:  # Check if text is not empty
                     result = emotion_pipeline(text)[0]
@@ -92,6 +96,10 @@ with tab2:
             # ✅ Apply sentiment and emotion analysis
             df[["Predicted Sentiment", "Sentiment Confidence"]] = df["text"].apply(lambda x: pd.Series(analyze_sentiment(x)))
             df[["Predicted Emotion", "Emotion Confidence"]] = df["text"].apply(lambda x: pd.Series(analyze_emotion(x)))
+
+            # ✅ Set ground truth from predicted sentiment if missing
+            if "true_sentiment" not in df.columns:
+                df["true_sentiment"] = df["Predicted Sentiment"]
 
             # ✅ Display Processed Results
             st.subheader("📊 Results")
@@ -106,7 +114,17 @@ with tab2:
             ax.set_ylabel("Count")
             st.pyplot(fig)
 
-            # ✅ Evaluation: Accuracy & F1-Score (if ground truth exists)
+            # ✅ Visualization: Emotion Distribution
+            st.subheader("📈 Emotion Distribution")
+            fig, ax = plt.subplots()
+            sns.countplot(x=df["Predicted Emotion"], palette="coolwarm", ax=ax)
+            ax.set_title("Emotion Analysis Distribution")
+            ax.set_xlabel("Emotion")
+            ax.set_ylabel("Count")
+            plt.xticks(rotation=45)
+            st.pyplot(fig)
+
+            # ✅ Model Evaluation (if ground truth exists)
             if "true_sentiment" in df.columns:
                 st.subheader("📊 Model Evaluation")
 
