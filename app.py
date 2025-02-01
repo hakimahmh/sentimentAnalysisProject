@@ -66,7 +66,7 @@ with tab1:
 
 # 🔹 Tab 2: Twitter Feed Analysis
 with tab2:
-    st.subheader("Analyze Sentiment & Emotion in Twitter Feed")
+    st.subheader("Analyze Sentiment & Emotion in Social Media Feed Using Dataset")
 
     uploaded_file = st.file_uploader("Upload a CSV file with a column named 'text'", type=["csv"])
 
